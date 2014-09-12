@@ -73,7 +73,7 @@ class SpheroNode(object):
                              0, 0, 0, 0, 0, 1e3]
 
     def __init__(self, default_update_rate=50.0):
-        rospy.init_node('sphero')
+        #rospy.init_node('sphero')#moved to main
         self.update_rate = default_update_rate
         self.sampling_divisor = int(400/self.update_rate)
 
@@ -92,11 +92,11 @@ class SpheroNode(object):
         self.power_state_msg = "No Battery Info"
         self.power_state = 0
 
-    def _init_pubsub(self):
-        self.odom_pub = rospy.Publisher('odom', Odometry)
-        self.imu_pub = rospy.Publisher('imu', Imu)
-        self.collision_pub = rospy.Publisher('collision', SpheroCollision)
-        self.diag_pub = rospy.Publisher('/diagnostics', DiagnosticArray)
+    def _init_pubsub(self, def_queue_size = 4):
+        self.odom_pub = rospy.Publisher('odom', Odometry , queue_size=def_queue_size)
+        self.imu_pub = rospy.Publisher('imu', Imu, queue_size=def_queue_size)
+        self.collision_pub = rospy.Publisher('collision', SpheroCollision , queue_size=def_queue_size)
+        self.diag_pub = rospy.Publisher('/diagnostics', DiagnosticArray , queue_size=def_queue_size)
         self.cmd_vel_sub = rospy.Subscriber('cmd_vel', Twist, self.cmd_vel, queue_size = 1)
         self.color_sub = rospy.Subscriber('set_color', ColorRGBA, self.set_color, queue_size = 1)
         self.back_led_sub = rospy.Subscriber('set_back_led', Float32, self.set_back_led, queue_size = 1)
@@ -116,11 +116,13 @@ class SpheroNode(object):
     def normalize_angle_positive(self, angle):
         return math.fmod(math.fmod(angle, 2.0*math.pi) + 2.0*math.pi, 2.0*math.pi);
 
-    def start(self):
+    def start(self, address = None):
         try:
-            self.is_connected = self.robot.connect()
+            self.is_connected = self.robot.connect(address)
             rospy.loginfo("Connect to Sphero with address: %s" % self.robot.bt.target_address)
         except:
+	    import traceback
+            traceback.print_exc(file=sys.stdout)
             rospy.logerr("Failed to connect to Sphero.")
             sys.exit(1)
         #setup streaming    
@@ -270,8 +272,19 @@ class SpheroNode(object):
 
         
 if __name__ == '__main__':
-    s = SpheroNode()
-    s.start()
-    s.spin()
-    s.stop()
+	rospy.init_node('sphero')
+	name = rospy.get_name()	
+	if rospy.has_param('%s/address'%name):
+		address = rospy.get_param('%s/address'%name)
+		if ':' in address:
+			print 'Looking for sphero with address %s.'%address
+		else:
+			address = None
+	else:
+		address = None
+
+	s = SpheroNode()
+	s.start(address)
+	s.spin()
+	s.stop()
 

@@ -1,0 +1,23 @@
+
+<launch>
+    <node pkg="sphero_node" type="sphero.py" name="sphero1" ns="sphero1" respawn="true">
+        <param name="address"  value="68:86:E7:01:D7:1E" />
+        <param name="connect_red"  value="0" />
+        <param name="connect_blue"  value="0" />
+        <param name="connect_green"  value="255" />
+    </node>
+
+    <node pkg="sphero_node" type="sphero.py" name="sphero2" ns="sphero2" respawn="true">
+        <param name="address"  value="68:86:E7:03:39:FC" />
+        <param name="connect_red"  value="255" />
+        <param name="connect_blue"  value="255" />
+        <param name="connect_green"  value="0" />
+    </node>
+
+    <node pkg="sphero_node" type="sphero_test.py" name="sphero_control">
+        <param name="num_spheros"  value="2" />
+    </node>
+
+    <node pkg="joy" type="joy_node" name="joy"/>
+
+</launch>

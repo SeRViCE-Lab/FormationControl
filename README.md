@@ -81,3 +81,7 @@ This should bring up each robot to the ros graph with each robot ready to receiv
 ```
 
 ### Example Command Velocity Code
+
+```bash
+  rosrun sphero_run sphero_move.py
+```

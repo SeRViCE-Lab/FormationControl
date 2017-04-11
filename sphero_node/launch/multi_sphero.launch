@@ -55,6 +55,13 @@
         <param name="connect_green"  value="255" />
     </node>
 
+    <node pkg="sphero_node" type="sphero.py" name="sphero_www" ns="sphero_gpb" respawn="true">
+        <param name="address"  value="68:86:E7:09:11:C4" />
+        <param name="connect_red"  value="255" />
+        <param name="connect_blue"  value="255" />
+        <param name="connect_green"  value="0" />
+    </node>
+
     <node pkg="sphero_node" type="sphero_test.py" name="sphero_control">
         <param name="num_spheros"  value="2" />
     </node>
@@ -62,3 +69,17 @@
     <node pkg="joy" type="joy_node" name="joy"/>
 
 </launch>
+
+
+<!--  Currently system paired robots
+[sphero_gpb/sphero_www-10] killing on exit
+[sphero_gbr/sphero_gbr-9] killing on exit
+[sphero_rwp/sphero_rwp-7] killing on exit
+[sphero_wwb/sphero_wwb-8] killing on exit
+[sphero_rpg/sphero_rpg-6] killing on exit
+[sphero_www/sphero_www-5] killing on exit
+[sphero_pob/sphero_pob-4] killing on exit
+[sphero_ypp/sphero_ypp-3] killing on exit
+
+
+-->

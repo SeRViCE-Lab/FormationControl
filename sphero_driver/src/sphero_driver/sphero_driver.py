@@ -170,7 +170,7 @@ class BTInterface(object):
 			self.sock = None
 
 	###
-	
+
 	def device_inquiry_with_with_rssi(self,sock):
 	    import bluetooth._bluetooth as bluez
 	    # save current filter
@@ -203,17 +203,17 @@ class BTInterface(object):
 		        addr = bluez.ba2str( pkt[1+6*i:1+6*i+6] )
 		        rssi = struct.unpack("b", pkt[1+13*nrsp+i])[0]
 		        results.append( ( addr, rssi ) )
-		        print "[%s] RSSI: [%d]" % (addr, rssi)
+		        print("[%s] RSSI: [%d]" % (addr, rssi))
 		elif event == bluez.EVT_INQUIRY_COMPLETE:
 		    done = True
 		elif event == bluez.EVT_CMD_STATUS:
 		    status, ncmd, opcode = struct.unpack("BBH", pkt[3:7])
 		    if status != 0:
-		        print "uh oh..."
+		        print("uh oh...")
 		        printpacket(pkt[3:7])
 		        done = True
 		else:
-		    print "unrecognized packet type 0x%02x" % ptype
+		    print("unrecognized packet type 0x%02x" % ptype)
 
 
 	    # restore old filter
@@ -356,7 +356,7 @@ class Sphero(threading.Thread):
 
 	def clamp(self, n, minn, maxn):
 		return max(min(maxn, n), minn)
-		
+
 	def ping(self, response):
 		"""
 		The Ping command is used to verify both a solid data link with the
@@ -632,7 +632,7 @@ class Sphero(threading.Thread):
 		"""
 		Helper function to add all the filtered data to the data strm
 		mask, so that the user doesn't have to set the data strm manually.
-		
+
 		:param sample_div: divisor of the maximum sensor sampling rate.
 		:param sample_frames: number of sample frames emitted per packet.
 		:param pcnt: packet count (set to 0 for unlimited streaming).
@@ -651,7 +651,7 @@ class Sphero(threading.Thread):
 		"""
 		Helper function to add all the raw data to the data strm mask, so
 		that the user doesn't have to set the data strm manually.
-		
+
 		:param sample_div: divisor of the maximum sensor sampling rate.
 		:param sample_frames: number of sample frames emitted per packet.
 		:param pcnt: packet count (set to 0 for unlimited streaming).
@@ -671,7 +671,7 @@ class Sphero(threading.Thread):
 		"""
 		Helper function to add all the data to the data strm mask, so
 		that the user doesn't have to set the data strm manually.
-		
+
 		:param sample_div: divisor of the maximum sensor sampling rate.
 		:param sample_frames: number of sample frames emitted per packet.
 		:param pcnt: packet count (set to 0 for unlimited streaming).
@@ -796,9 +796,9 @@ class Sphero(threading.Thread):
 			| SOP1 | SOP2 | DID | CID | SEQ | DLEN | <data> | CHK |
 			-------------------------------------------------------
 
-		* SOP1 - start packet 1 - Always 0xff. 
+		* SOP1 - start packet 1 - Always 0xff.
 		* SOP2 - start packet 2 - Set to 0xff when an acknowledgement is\
-			expected, 0xfe otherwise.		
+			expected, 0xfe otherwise.
 		* DID - Device ID
 		* CID - Command ID
 		* SEQ - Sequence Number - This client field is echoed in the\
@@ -889,7 +889,7 @@ class Sphero(threading.Thread):
 					else:
 						break
 						#print "Response packet", self.data2hexstr(data_packet)
-				 
+
 				elif data[:2] == RECV['ASYNC']:
 					data_length = (ord(data[3])<<8)+ord(data[4])
 					if data_length+5 <= len(data):
@@ -919,10 +919,10 @@ class Sphero(threading.Thread):
 			|State |
 			--------
 
-		The power state byte: 
-			* 01h = Battery Charging, 
+		The power state byte:
+			* 01h = Battery Charging,
 			* 02h = Battery OK,
-			* 03h = Battery Low, 
+			* 03h = Battery Low,
 			* 04h = Battery Critical
 		'''
 		return struct.unpack_from('B', ''.join(data[5:]))[0]
@@ -953,7 +953,7 @@ class Sphero(threading.Thread):
 		this value.
 		'''
 		output={}
-		
+
 		output['X'], output['Y'], output['Z'], output['Axis'], output['xMagnitude'], output['yMagnitude'], output['Speed'], output['Timestamp'] = struct.unpack_from('>hhhbhhbI', ''.join(data[5:]))
 		return output
 
@@ -972,5 +972,3 @@ class Sphero(threading.Thread):
 		self.is_connected = False
 		self.bt.close()
 		return self.is_connected
-
-

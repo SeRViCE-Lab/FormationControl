@@ -295,7 +295,6 @@ class BTInterface(object):
 		self.sock.close()
 
 class Sphero(threading.Thread):
-
 	def __init__(self, target_name = 'Sphero'):
 		threading.Thread.__init__(self)
 		self.target_name = target_name
@@ -965,8 +964,6 @@ class Sphero(threading.Thread):
 		#print self.mask_list
 		#print output
 		return output
-
-
 
 	def disconnect(self):
 		self.is_connected = False

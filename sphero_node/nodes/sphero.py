@@ -57,7 +57,7 @@ class SpheroNode(object):
                       4:"Battery Critical"}
 
 
-    ODOM_POSE_COVARIANCE = [1e-3, 0, 0, 0, 0, 0, 
+    ODOM_POSE_COVARIANCE = [1e-3, 0, 0, 0, 0, 0,
                             0, 1e-3, 0, 0, 0, 0,
                             0, 0, 1e6, 0, 0, 0,
                             0, 0, 0, 1e6, 0, 0,
@@ -65,7 +65,7 @@ class SpheroNode(object):
                             0, 0, 0, 0, 0, 1e3]
 
 
-    ODOM_TWIST_COVARIANCE = [1e-3, 0, 0, 0, 0, 0, 
+    ODOM_TWIST_COVARIANCE = [1e-3, 0, 0, 0, 0, 0,
                              0, 1e-3, 0, 0, 0, 0,
                              0, 0, 1e6, 0, 0, 0,
                              0, 0, 0, 1e6, 0, 0,
@@ -125,7 +125,7 @@ class SpheroNode(object):
             traceback.print_exc(file=sys.stdout)
             rospy.logerr("Failed to connect to Sphero.")
             sys.exit(1)
-        #setup streaming    
+        #setup streaming
         self.robot.set_filtered_data_strm(self.sampling_divisor, 1 , 0, True)
         self.robot.add_async_callback(sphero_driver.IDCODE['DATA_STRM'], self.parse_data_strm)
         #setup power notification
@@ -152,8 +152,8 @@ class SpheroNode(object):
                 self.last_diagnostics_time = now
                 self.publish_diagnostics(now)
             r.sleep()
-                    
-    def stop(self):    
+
+    def stop(self):
         #tell the ball to stop moving before quiting
         self.robot.roll(int(0), int(0), 1, False)
         self.robot.shutdown = True
@@ -164,7 +164,7 @@ class SpheroNode(object):
     def publish_diagnostics(self, time):
         diag = DiagnosticArray()
         diag.header.stamp = time
-        
+
         stat = DiagnosticStatus(name="Battery Status", level=DiagnosticStatus.OK, message=self.power_state_msg)
         if self.power_state == 3:
             stat.level=DiagnosticStatus.WARN
@@ -188,10 +188,10 @@ class SpheroNode(object):
             collision.y_magnitude = data["yMagnitude"]
             collision.speed = data["Speed"]
             collision.timestamp = data["Timestamp"]
-            
+
             self.collision = collision
             self.collision_pub.publish(self.collision)
-            
+
 
     def parse_power_notify(self, data):
         if self.is_connected:
@@ -221,9 +221,9 @@ class SpheroNode(object):
             odom.header.stamp = now
             odom.pose.pose = Pose(Point(data["ODOM_X"]/100.0,data["ODOM_Y"]/100.0,0.0), Quaternion(0.0,0.0,0.0,1.0))
             odom.twist.twist = Twist(Vector3(data["VELOCITY_X"]/1000.0, 0, 0), Vector3(0, 0, data["GYRO_Z_FILTERED"]*10.0*math.pi/180.0))
-            odom.pose.covariance =self.ODOM_POSE_COVARIANCE                
+            odom.pose.covariance =self.ODOM_POSE_COVARIANCE
             odom.twist.covariance =self.ODOM_TWIST_COVARIANCE
-            self.odom_pub.publish(odom)                      
+            self.odom_pub.publish(odom)
 
             #need to publish this trasform to show the roll, pitch, and yaw properly
             self.transform_broadcaster.sendTransform((0.0, 0.0, 0.038 ),
@@ -236,7 +236,7 @@ class SpheroNode(object):
             self.cmd_heading = self.normalize_angle_positive(math.atan2(msg.linear.x,msg.linear.y))*180/math.pi
             self.cmd_speed = math.sqrt(math.pow(msg.linear.x,2)+math.pow(msg.linear.y,2))
             self.robot.roll(int(self.cmd_speed), int(self.cmd_heading), 1, False)
-    
+
     def set_color(self, msg):
         if self.is_connected:
             self.robot.set_rgb_led(int(msg.r*255),int(msg.g*255),int(msg.b*255),0,False)
@@ -270,10 +270,10 @@ class SpheroNode(object):
             self.robot.set_rgb_led(int(config['red']*255),int(config['green']*255),int(config['blue']*255),0,False)
         return config
 
-        
+
 if __name__ == '__main__':
 	rospy.init_node('sphero')
-	name = rospy.get_name()	
+	name = rospy.get_name()
 	if rospy.has_param('%s/address'%name):
 		address = rospy.get_param('%s/address'%name)
 		if ':' in address:
@@ -287,4 +287,3 @@ if __name__ == '__main__':
 	s.start(address)
 	s.spin()
 	s.stop()
-

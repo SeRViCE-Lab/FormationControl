@@ -1,7 +1,6 @@
-## sphero_ros
+## Official Documentation
 
-
-### Checkout the [docs](http://mmwise.github.com/sphero_ros)
+  - Checkout the [docs](http://mmwise.github.com/sphero_ros)
 
 ### Dependencies
 
@@ -37,7 +36,9 @@
 
   - tqdm
 
-   pip install tqdm>=4.11.2
+  ```bash
+    pip install tqdm>=4.11.2
+  ```
 
 ### Sphero ROS Build
 

@@ -12,5 +12,5 @@
     <param name="vo_used" value="false"/>
     <param name="self_diagnose" value="false"/>
   </node>
-  <node pkg="sphero_node" type="sphero.py" name="sphero_node"/>
+  <!-- <node pkg="sphero_node" type="sphero.py" name="sphero_node"/> -->
 </launch>

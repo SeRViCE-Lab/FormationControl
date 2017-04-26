@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="joy0" default="/dev/input/js0" />
+  <arg name="joy1" default="/dev/input/js1" />
+
+  <group ns="sphero0">
+    <node name="joy" pkg="joy" type="joy_node" output="screen" >
+      <param name="dev" value="$(arg joy0)" />
+    </node>
+
+    <node name="sphero" pkg="sphero_node" type="sphero.py" output="screen">
+      <param name="address" value="68:86:E7:05:44:7F" />
+    </node>
+
+    <node name="teleop" pkg="sphero_bringup" type="teleop.py" output="screen">
+    </node>
+  </group>
+
+  <group ns="sphero1">
+    <node name="joy" pkg="joy" type="joy_node" output="screen" >
+      <param name="dev" value="$(arg joy1)" />
+    </node>
+
+    <node name="sphero" pkg="sphero_node" type="sphero.py" output="screen">
+      <param name="address" value="68:86:E7:04:C7:75" />
+    </node>
+
+    <node name="teleop" pkg="sphero_bringup" type="teleop.py" output="screen">
+    </node>
+  </group>
+
+</launch>

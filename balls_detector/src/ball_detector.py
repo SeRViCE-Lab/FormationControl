@@ -4,8 +4,8 @@
 We subscribe to the kinect rgb camera topic and perform some detection
 
 Authors:
-    1.  Kaveh Fathian
-    2.  Olalekan Ogunmolu
+    1.  Olalekan Ogunmolu
+    2.  Kaveh Fathian
     3.  Sleiman Safaoui
 
 May 11, 2016
@@ -27,8 +27,8 @@ from cv_bridge import CvBridge, CvBridgeError
 
 parser = argparse.ArgumentParser(description='Process environmental variables')
 parser.add_argument("--disp", default=True, action="store_true")
-parser.add_argument("--height", type=int, default=640)
-parser.add_argument("--width", type=int, default=480)
+parser.add_argument("--height", type=int, default=480)
+parser.add_argument("--width", type=int, default=640)
 args = parser.parse_args()
 
 class ImageConverter:
@@ -61,6 +61,10 @@ class ImageConverter:
   def resize_frame(self, frame):
       '''
       override this in derived classes
+      '''
+  def display_image(self, image):
+      '''
+      override
       '''
 
   def erode_dilate(self, frame):
@@ -110,6 +114,15 @@ class SpheroDetector(ImageConverter):
         cv2.erode(frame, kernel, frame, anchor, iterations=2)
         cv2.dilate(frame, kernel, frame, anchor, 2)
 
+    def display_image(self, image):
+        image = self.resize_frame(image)
+
+        k = 0xFF & cv2.waitKey(1)
+        cv2.imshow('blobbed images', image)
+
+        if k == 27:
+            cv2.destroyAllWindows()
+            rospy.on_shutdown(self.shutdown_hook)
 
     def detect_blobs(self):
         '''
@@ -121,11 +134,17 @@ class SpheroDetector(ImageConverter):
         def prepro(frame):
             #resize the image
             frame = self.resize_frame(frame)
-            #convert to grayscale
-            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY);
+
+            frame *= 1/255
+            frame = (frame/255).astype('uint8')
+            print(frame.shape)
+            cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY, frame);
+
+            self.display_image(frame)
 
             #binarize image
             _, frame = cv2.threshold(frame, self.thresh, 255, cv2.THRESH_BINARY)
+
 
             #erode and dilate image
             self.erode_dilate(frame)
@@ -133,11 +152,9 @@ class SpheroDetector(ImageConverter):
             return frame
 
         self.image = self.get_image()
-        print(self.image)
 
         #pre-process images first
         self.image = prepro(self.image)
-        print(self.image)
 
         #setup detector Params
         params = cv2.SimpleBlobDetector_Params()
@@ -179,14 +196,6 @@ class SpheroDetector(ImageConverter):
         # im_with_keypoints = cv2.drawKeypoints(image, keypoints, \
         #                                       np.array([]), (0,0,255), \
         #                                       cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-        # image = self.resize_frame(image)
-
-        # k = 0xFF & cv2.waitKey(1)
-        # cv2.imshow('blobbed images', image)
-        #
-        # if k == 27:
-        #     cv2.destroyAllWindows()
-        #     rospy.on_shutdown(self.shutdown_hook)
 
 
 def main():

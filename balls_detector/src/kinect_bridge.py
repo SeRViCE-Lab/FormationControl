@@ -40,7 +40,7 @@ class ImagePublisher:
 
   def get_rgb(self, dev, data, timestamp):
         # global keep_running
-        self.kinect_image = data
+        self.kinect_image = data[:, :, ::-1]  # RGB -> BGR
 
         try:
           self.kinect_pub.publish(self.bridge.cv2_to_imgmsg(self.kinect_image, "bgr8"))

@@ -10,7 +10,6 @@
 #include <sensor_msgs/Image.h>
 #include <image_transport/image_transport.h>
 
-
 class Receiver
 {
 private:
@@ -105,9 +104,6 @@ private:
     cv::namedWindow(windowName, cv::WINDOW_NORMAL);
     cv::resizeWindow(windowName, 640, 480) ;
 
-    ROS_INFO("thread received image");
-    ROS_INFO_STREAM("running: " << running);
-
     for(; running && ros::ok() ;)
     {
       if(updateImage)
@@ -140,38 +136,36 @@ private:
     cv::SimpleBlobDetector::Params params;
 
     // Change thresholds
-    params.minThreshold = 10;
-    params.maxThreshold = 200;
+    // params.minThreshold = 10;
+    // params.maxThreshold = 100;
 
     // Filter by Area.
     params.filterByArea = true;
-    params.minArea = 1500;
+    params.minArea = 100;
 
     // Filter by Circularity
     params.filterByCircularity = true;
-    params.minCircularity = 1.0;
+    params.minCircularity = 0.10;
 
     // Filter by Convexity
     params.filterByConvexity = true;
-    params.minConvexity = 0.87;
+    params.minConvexity = 0.65;
 
     // Filter by Inertia
     params.filterByInertia = true;
-    params.minInertiaRatio = 0.01;
+    params.minInertiaRatio = 0.6;
 
     std::vector<cv::KeyPoint> keypoints;
     #if CV_MAJOR_VERSION < 3
       cv::SimpleBlobDetector detector(params);
       detector.detect( color, keypoints);
-
     #else
       cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
       detector->detect( color_, keypoints);
-
     #endif
 
     cv::Mat mat_keypoints_;
-    drawKeypoints(color_, keypoints, mat_keypoints_, cv::Scalar(255, 150, 0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    drawKeypoints(color_, keypoints, mat_keypoints_, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
   }
 };
 

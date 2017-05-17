@@ -2,7 +2,7 @@
       May 11, 2017
     -->
 <launch>
-  <node pkg="balls_detector" type="ball_detector.py" name="ball_detector"></node>
+  <node pkg="balls_detector" type="balls_detector_node" name="ball_detector"></node>
   <node pkg="balls_detector" type="kinect_bridge.py" name="kinect_bridge"></node>
 
 </launch>

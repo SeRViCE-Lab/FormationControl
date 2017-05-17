@@ -10,6 +10,9 @@
 #include <sensor_msgs/Image.h>
 #include <image_transport/image_transport.h>
 
+using namespace cv;
+using namespace std;
+
 class Receiver
 {
 private:
@@ -100,7 +103,7 @@ private:
 
   void imageDisp()
   {
-    cv::Mat color;
+    cv::Mat color, blob_circs(640, 480, CV_8UC3);
     cv::namedWindow(windowName, cv::WINDOW_NORMAL);
     cv::resizeWindow(windowName, 640, 480) ;
 
@@ -112,8 +115,9 @@ private:
         color = this->color;
         updateImage = false;
 
-        detectBlobs(std::move(color));
-        cv::imshow(windowName, color);
+        detectBlobs(std::move(color), std::move(blob_circs));
+        // cv::imshow(windowName, color);
+        cv::imshow(windowName, blob_circs);
       }
 
       int key = cv::waitKey(1);
@@ -130,42 +134,152 @@ private:
     cv::waitKey(5);
   }
 
-  void detectBlobs(cv::Mat && color_)
+  static String Legende(SimpleBlobDetector::Params &pAct)
   {
-    // Setup SimpleBlobDetector parameters.
-    cv::SimpleBlobDetector::Params params;
+    String s = "";
+    if (pAct.filterByArea)
+    {
+        String inf = static_cast<const ostringstream&>(ostringstream() << pAct.minArea).str();
+        String sup = static_cast<const ostringstream&>(ostringstream() << pAct.maxArea).str();
+        s = " Area range [" + inf + " to  " + sup + "]";
+    }
+    if (pAct.filterByCircularity)
+    {
+        String inf = static_cast<const ostringstream&>(ostringstream() << pAct.minCircularity).str();
+        String sup = static_cast<const ostringstream&>(ostringstream() << pAct.maxCircularity).str();
+        if (s.length() == 0)
+            s = " Circularity range [" + inf + " to  " + sup + "]";
+        else
+            s += " AND Circularity range [" + inf + " to  " + sup + "]";
+    }
+    if (pAct.filterByColor)
+    {
+        String inf = static_cast<const ostringstream&>(ostringstream() << (int)pAct.blobColor).str();
+        if (s.length() == 0)
+            s = " Blob color " + inf;
+        else
+            s += " AND Blob color " + inf;
+    }
+    if (pAct.filterByConvexity)
+    {
+        String inf = static_cast<const ostringstream&>(ostringstream() << pAct.minConvexity).str();
+        String sup = static_cast<const ostringstream&>(ostringstream() << pAct.maxConvexity).str();
+        if (s.length() == 0)
+            s = " Convexity range[" + inf + " to  " + sup + "]";
+        else
+            s += " AND  Convexity range[" + inf + " to  " + sup + "]";
+    }
+    if (pAct.filterByInertia)
+    {
+        String inf = static_cast<const ostringstream&>(ostringstream() << pAct.minInertiaRatio).str();
+        String sup = static_cast<const ostringstream&>(ostringstream() << pAct.maxInertiaRatio).str();
+        if (s.length() == 0)
+            s = " Inertia ratio range [" + inf + " to  " + sup + "]";
+        else
+            s += " AND  Inertia ratio range [" + inf + " to  " + sup + "]";
+    }
+    return s;
+  }
 
-    // Change thresholds
-    // params.minThreshold = 10;
-    // params.maxThreshold = 100;
+  void detectBlobs(cv::Mat && img, cv::Mat && result)
+  {
+    SimpleBlobDetector::Params pDefaultBLOB;
+    // This is default parameters for SimpleBlobDetector
+    pDefaultBLOB.thresholdStep = 10;
+    pDefaultBLOB.minThreshold = 10;
+    pDefaultBLOB.maxThreshold = 220;
+    pDefaultBLOB.minRepeatability = 2;
+    pDefaultBLOB.minDistBetweenBlobs = 10;
+    pDefaultBLOB.filterByColor = false;
+    pDefaultBLOB.blobColor = 0;
+    pDefaultBLOB.filterByArea = false;
+    pDefaultBLOB.minArea = 25;
+    pDefaultBLOB.maxArea = 1000;
+    pDefaultBLOB.filterByCircularity = false;
+    pDefaultBLOB.minCircularity = (float)0.9;
+    pDefaultBLOB.maxCircularity = (float)1e5;
+    pDefaultBLOB.filterByInertia = false;
+    pDefaultBLOB.minInertiaRatio = 0.5f;
+    pDefaultBLOB.maxInertiaRatio = (float)1e2;
+    pDefaultBLOB.filterByConvexity = false;
+    pDefaultBLOB.minConvexity = 0.95f;
+    pDefaultBLOB.maxConvexity = (float)1e2;
+    // Descriptor array for BLOB
+    vector<String> typeDesc;
+    // Param array for BLOB
+    vector<SimpleBlobDetector::Params> pBLOB;
+    vector<SimpleBlobDetector::Params>::iterator itBLOB;
+    // Color palette
+    vector< Vec3b >  palette;
+    for (int i = 0; i<65536; i++)
+    {
+        palette.push_back(Vec3b((uchar)rand(), (uchar)rand(), (uchar)rand()));
+    }
 
-    // Filter by Area.
-    params.filterByArea = true;
-    params.minArea = 100;
+    // Param for second BLOB detector we want area between 500 and 2900 pixels
+    typeDesc.push_back("BLOB");
+    pBLOB.push_back(pDefaultBLOB);
+    pBLOB.back().filterByArea = true;
+    pBLOB.back().minArea = 2800;
+    pBLOB.back().maxArea = 5500;
+    // Param for third BLOB detector we want only circular object
+    // typeDesc.push_back("BLOB");
+    // Param for Fourth BLOB detector we want ratio inertia
+    // typeDesc.push_back("BLOB");
+    // pBLOB.push_back(pDefaultBLOB);
+    // pBLOB.back().filterByInertia = true;
+    // pBLOB.back().minInertiaRatio = 0.7;
+    // pBLOB.back().maxInertiaRatio = (float)1.0;
+    // Param for fifth BLOB detector we want ratio inertia
+    // typeDesc.push_back("BLOB");
+    // pBLOB.push_back(pDefaultBLOB);
+    // pBLOB.back().filterByConvexity = true;
+    // pBLOB.back().minConvexity = 0.6;
+    // pBLOB.back().maxConvexity = (float)0.9;
+    // Param for six BLOB detector we want blob with gravity center color equal to 0 bug #4321 must be fixed
+    // typeDesc.push_back("BLOB");
+    // pBLOB.push_back(pDefaultBLOB);
+    // pBLOB.back().filterByColor = true;
+    // pBLOB.back().blobColor = 0;
 
-    // Filter by Circularity
-    params.filterByCircularity = true;
-    params.minCircularity = 0.10;
-
-    // Filter by Convexity
-    params.filterByConvexity = true;
-    params.minConvexity = 0.65;
-
-    // Filter by Inertia
-    params.filterByInertia = true;
-    params.minInertiaRatio = 0.6;
-
-    std::vector<cv::KeyPoint> keypoints;
-    #if CV_MAJOR_VERSION < 3
-      cv::SimpleBlobDetector detector(params);
-      detector.detect( color, keypoints);
-    #else
-      cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
-      detector->detect( color_, keypoints);
-    #endif
-
-    cv::Mat mat_keypoints_;
-    drawKeypoints(color_, keypoints, mat_keypoints_, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    itBLOB = pBLOB.begin();
+    vector<double> desMethCmp;
+    Ptr<Feature2D> b;
+    String label;
+    // Descriptor loop
+    vector<String>::iterator itDesc;
+    for (itDesc = typeDesc.begin(); itDesc != typeDesc.end(); ++itDesc)
+    {
+        vector<KeyPoint> keyImg1;
+        if (*itDesc == "BLOB")
+        {
+            b = SimpleBlobDetector::create(*itBLOB);
+            label = Legende(*itBLOB);
+            ++itBLOB;
+        }
+        try
+        {
+            // We can detect keypoint with detect method
+            vector<KeyPoint>  keyImg;
+            vector<Rect>  zone;
+            vector<vector <Point> >  region;
+            Mat     desc; //, result(img.rows, img.cols, CV_8UC3);
+            if (b.dynamicCast<SimpleBlobDetector>() != NULL)
+            {
+                Ptr<SimpleBlobDetector> sbd = b.dynamicCast<SimpleBlobDetector>();
+                sbd->detect(img, keyImg, Mat());
+                drawKeypoints(img, keyImg, result);
+                int i = 0;
+                for (vector<KeyPoint>::iterator k = keyImg.begin(); k != keyImg.end(); ++k, ++i)
+                    circle(result, k->pt, (int)k->size, palette[i % 65536]);
+            }
+        }
+        catch (Exception& e)
+        {
+            cout << "Feature : " << *itDesc << "\n";
+            cout << e.msg << endl;
+        }
+    }
   }
 };
 

@@ -108,7 +108,6 @@ class MoveSphero(object):
 			self.angvel_gbr_pub = rospy.Publisher('/sphero_gbr/set_angular_velocity', Float32, queue_size = self.def_queue_size)
 
 	def sphero_populate(self):
-
 		# generate velocity commads
 		twist_msg, twist_msg_2 = Twist(), Twist()
 		twist_msg_3, twist_msg_4 = Twist(), Twist()

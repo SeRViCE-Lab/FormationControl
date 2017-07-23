@@ -4,38 +4,24 @@
 
 ### Dependencies
 
-- ROS
-
-  Go to [this website](http://wiki.ros.org/indigo/Installation/Ubuntu) and follow all the instructions there to install
+* ROS
+ * Go to [the ROS website](http://wiki.ros.org/indigo/Installation/Ubuntu) and follow all the instructions there to install
   your ros environment.
-
-  Then install catkin. I prefer catkin build to catkin make since it offers its own separation of build space advantages.
-
-- Catkin build
-
-  The best way to install catkin build is via PyPI. Do this in terminal:
-
+ * Then install catkin.
+  * Catkin build:  The best way to install catkin build is via PyPI. Do this in terminal:  
     ```
       sudo pip install -U catkin_tools
     ```
-
-- Build your workspace
+ * Build your workspace
 
   ```bash
   export ROS_DISTRO=`rosversion -d`              # Set ROS distribution
   mkdir -p ~/catkin_ws/src                       # Create workspace
   cd ~/catkin_ws/src                             # Navigate to source space
-  # rosinstall_generator --deps ros_tutorials > .rosinstall  # Get list of packages
-  # wstool update                                            # Checkout all packages
   cd ~/catkin_ws                                 # Navigate to ros workspace root
   catkin init                                              # Initialize workspace
   ```
-
-  - tqdm
-
-  ```bash
-    pip install tqdm>=4.11.2
-  ```
+* Install opencv 2.4
 
 ### Sphero ROS Build
 
@@ -55,11 +41,11 @@ Now cd to the root of your catkin_ws folder and then build:
 
 ### Adding Paired Bluetooth Addresses to Launch file
 
- Pair the bluetooth addresses for other sphero devices that you have using the bluetooth settings tab on your ubuntu distro, e.g. >> `Dash + <search for BlueTooth + Click on the "+" sign to add other bluetooth devices>`.
+ Pair the bluetooth for allyour sphero devices using the bluetooth settings tab on your Linux distro, e.g. >> `Dash + <search for BlueTooth + Click on the "+" sign to add other bluetooth devices>`.
 
- Now note the names and addresses of these devices that you have paired with and copy them into the the appropriate tabs in the [multisphero launcher file](/sphero_node/launch/multi_sphero.launch).
+ Now note the names and addresses of these devices that you have paired and copy them into the the appropriate tabs in the [multisphero launcher file](/sphero_node/launch/multi_sphero.launch).
 
-### Bringup each robot into roscore
+### Bringup each robot into ros
 
 ```bash
   roslaunch sphero_node multi_sphero.launch

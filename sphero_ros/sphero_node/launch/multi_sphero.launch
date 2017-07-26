@@ -2,14 +2,15 @@
 
    <!-- <rosparam command="load" file="$(find sphero_node)/config/sphero.yaml" /> -->
     <arg name="rgo" default="false"/>
-    <arg name="ypp" default="true"/>
+    <arg name="ypp" default="false"/>
     <arg name="pob" default="false"/>
     <arg name="www" default="false"/>
     <arg name="rpg" default="false"/>
-    <arg name="rwp" default="true"/>
+    <arg name="rwp" default="false"/>
     <arg name="wwb" default="false"/>
-    <arg name="gbr" default="false"/>
+    <arg name="gbr" default="true"/>
     <arg name="gpb" default="false"/>
+    <arg name="yyw" default="true"/>
 
    <group if="$(arg rgo)">
       <node pkg="sphero_node" type="sphero.py" name="sphero_rgo" ns="sphero_rgo" respawn="true">
@@ -89,6 +90,15 @@
         <param name="connect_red"  value="255" />
         <param name="connect_blue"  value="255" />
         <param name="connect_green"  value="0" />
+    </node>
+  </group>
+
+  <group if="$(arg yyw)">
+    <node pkg="sphero_node" type="sphero.py" name="sphero_yyw" ns="sphero_yyw" respawn="true">
+        <param name="address"  value="68:86:E7:09:07:72" />
+        <param name="connect_red"  value="255" />
+        <param name="connect_blue"  value="255" />
+        <param name="connect_green"  value="255" />
     </node>
   </group>
 

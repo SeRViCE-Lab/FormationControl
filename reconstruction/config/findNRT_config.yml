@@ -8,7 +8,7 @@ board_params:
 
 cam_params:
   image_width: 640
-  image_height: 480
+  image_hight: 480
   camera_name: narrow_stereo
   camera_matrix:
     rows: 3

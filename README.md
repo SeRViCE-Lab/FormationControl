@@ -111,8 +111,8 @@ Kinect support need to be extended.
 
 ### 3D reconstruction
 
-To get a 3D reconstruct of the location of the robots, camera calibration must be performed at first. To do so, install the image_pipeline package by cloning the package from github using (this link)[https://github.com/ros-perception/image_pipeline].
-Once installed, follow (this tutorial)[http://wiki.ros.org/camera_calibration/Tutorials/MonocularCalibration] to calibrate your camera.
+To get a 3D reconstruct of the location of the robots, camera calibration must be performed at first. To do so, install the image_pipeline package by cloning the package from github using [this link](https://github.com/ros-perception/image_pipeline).
+Once installed, follow [this tutorial](http://wiki.ros.org/camera_calibration/Tutorials/MonocularCalibration) to calibrate your camera.
 Save the data obtained and go to the location in whch it was stored. Extract the files and copy the generate YAML file as is to the directory ~/catkin_ws/src/sphero_ros/reconstruction/config. Name the file findNRT_config.yml.
 Then, run the roconstruction package though terminal by using roslaunch to launch  reconstruction.launch
 ```roslaunch reconstruction reconstruction.launch

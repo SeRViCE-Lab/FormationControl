@@ -1,4 +1,4 @@
-## Documentation of the balls_detector packages
+## Documentation of the balls_detector package
 ###### Please refer to the [ReadMe file](http://github.com/SeRViCE-Lab/sphero_ros/blob/master/README.md) in the Official Documentation of the sphero_ros project for more details about running the package.
 
 ### Package details

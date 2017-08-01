@@ -182,9 +182,12 @@ private:
   void imageDisp()
   {
     cv::namedWindow(windowName, cv::WINDOW_NORMAL);
-    cv::resizeWindow(windowName, 640, 480) ;
-    cv::imshow(windowName, frame);
-    int key = cv::waitKey(1);
+    cv::resizeWindow(windowName, 640, 480);
+    if (!frame.empty())
+    {
+      cv::imshow(windowName, frame); 
+      int key = cv::waitKey(1);
+    }
   }
 
 

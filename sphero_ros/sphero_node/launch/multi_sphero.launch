@@ -2,13 +2,13 @@
 
    <!-- <rosparam command="load" file="$(find sphero_node)/config/sphero.yaml" /> -->
     <arg name="rgo" default="false"/>
-    <arg name="ypp" default="false"/>
+    <arg name="ypp" default="true"/>
     <arg name="pob" default="false"/>
     <arg name="www" default="false"/>
     <arg name="rpg" default="false"/>
     <arg name="rwp" default="false"/>
     <arg name="wwb" default="false"/>
-    <arg name="gbr" default="true"/>
+    <arg name="gbr" default="false"/>
     <arg name="gpb" default="false"/>
     <arg name="yyw" default="true"/>
 
@@ -26,7 +26,7 @@
         <param name="address"  value="68:86:E7:09:08:E3" />
         <param name="connect_red"  value="255" />
         <param name="connect_blue"  value="255" />
-        <param name="connect_green"  value="0" />
+        <param name="connect_green"  value="255" />
     </node>
   </group>
 

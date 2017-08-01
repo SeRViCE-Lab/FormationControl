@@ -13,15 +13,15 @@
   </node>
 
   <node pkg="balls_detector" type="tagger" name="tagger">
-    <rosparam command="load" file="$(find balls_detector)/launch/tag_param.yaml"/>
+    <rosparam command="load" file="$(find balls_detector)/config/tag_param.yaml"/>
   </node>
 
   <node pkg="balls_detector" type="balls_detector_node" name="balls_detector_node">
-    <rosparam command="load" file="$(find balls_detector)/launch/detect_param.yaml"/>
+    <rosparam command="load" file="$(find balls_detector)/config/detect_param.yaml"/>
   </node>
 
   <node pkg="balls_detector" type="tracker.py" name="tracker">
-    <rosparam command="load" file="$(find balls_detector)/launch/track_param.yaml"/>
+    <rosparam command="load" file="$(find balls_detector)/config/track_param.yaml"/>
   </node>
 
 </launch>

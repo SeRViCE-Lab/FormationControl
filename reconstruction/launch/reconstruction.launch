@@ -1,0 +1,13 @@
+<!-- Sleiman Safaoui
+     July 27, 2017
+   -->
+
+<launch>
+
+  <node pkg="reconstruction" type="modify_camera_param.py" name="modify_camera_param"/>
+
+  <node pkg="reconstruction" type="findNRT" name="findNRT" output="screen">
+    <rosparam command="load" file="$(find reconstruction)/config/findNRT_config.yml"/>
+  </node>
+
+</launch>

@@ -1,6 +1,6 @@
 Rob_Params:
   num_rob: 2
-  sph0: sphero_gbr
+  sph0: sphero_ypp
   sph1: sphero_yyw
 
 Blob_Params:

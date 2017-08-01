@@ -2,7 +2,7 @@
 
 '''
 We modify the camera parameters, in particular we set exposure to manual mode,
-we reduce exposure to a minimum value, and we turn of autofocus
+we reduce exposure to a minimum value, and we turn off autofocus
 
 Reducing exposure allows for the elimination of the objects that are not bright
 and allows for better detection of the robots

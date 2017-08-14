@@ -1,10 +1,16 @@
 cam_num: 1 # camera number 0: internal/1st camera , 1: 2nd camera ...
 
-board_params:
-  sqr_size: 0.028
+# board_params: # small board
+#   sqr_size: 0.028
+#   size:
+#     row_corners: 5
+#     col_corners: 8
+
+board_params: # medium board
+  sqr_size: 0.0335
   size:
-    row_corners: 5
-    col_corners: 8
+    row_corners: 6
+    col_corners: 9
 
 cam_params:
   image_width: 640
@@ -29,4 +35,5 @@ cam_params:
     data: [617.408508, 0.000000, 315.495035, 0.000000, 0.000000, 617.228088, 231.541452, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]
 
 
-# note: make sure that the checkerboard is placed in a horizontal postion with respect to the camera
+# note: make sure that the checkerboard is placed in the correct horizontal
+# postion with respect to the camera (the two horizontal positions are different)

@@ -134,7 +134,7 @@ def main():
     rate = rospy.Rate(30)
     tr = Tracker()
     num_rob = rospy.get_param("/tracker/Rob_Params/num_rob")
-    first = 30*(2 + 2*num_rob) # wait loops for proper initialization of pos_old and pos_ordered
+    first = 30*(3 + 2*num_rob) # wait loops for proper initialization of pos_old and pos_ordered
     pos_old = []
     pos_ordered = []
     try:

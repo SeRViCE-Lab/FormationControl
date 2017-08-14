@@ -1,28 +1,28 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(reconstruction)
+project(form_ctrl)
 
-## Add support for C++11, supported in ROS Kinetic and newer
-add_definitions(-std=c++11)
+## Compile as C++11, supported in ROS Kinetic and newer
+add_compile_options(-std=c++11)
 
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   roscpp
   rospy
   sensor_msgs
   std_msgs
-	image_transport
   cv_bridge
 )
-
 ## System dependencies are found with CMake's conventions
+# find_package(Boost REQUIRED COMPONENTS system)
 find_package(PkgConfig)
 pkg_check_modules( EIGEN3 REQUIRED eigen3 )
 include_directories( ${EIGEN3_INCLUDE_DIRS} )
 add_definitions(${EIGEN_DEFINITIONS})
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
-# find_package(Eigen3 REQUIRED)
-
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -78,7 +78,7 @@ find_package(Boost REQUIRED COMPONENTS system)
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   geometry_msgs#   sensor_msgs#   std_msgs
+#   std_msgs  # Or other packages containing msgs
 # )
 
 ################################################
@@ -112,26 +112,26 @@ find_package(Boost REQUIRED COMPONENTS system)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES reconstruction
- CATKIN_DEPENDS geometry_msgs roscpp rospy sensor_msgs std_msgs
- 								cv_bridge image_transport
+#  LIBRARIES form_ctrl
+CATKIN_DEPENDS geometry_msgs roscpp rospy sensor_msgs std_msgs cv_bridge
   DEPENDS EIGEN3
 )
-
 ###########
 ## Build ##
 ###########
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
+include_directories(SYSTEM ${Boost_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIRS})
+# include_directories(
 include_directories(
   ${catkin_INCLUDE_DIRS}
+#  ${eigen3_INCLUDE_DIR}
 )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/findNRT.cpp
+#   src/${PROJECT_NAME}/form_ctrl.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -142,7 +142,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(findNRT src/findNRT.cpp)
+add_executable(${PROJECT_NAME}_node src/form_ctrl_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -155,7 +155,7 @@ add_executable(findNRT src/findNRT.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(findNRT
+target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES} ${OpenCV_LIBS}
 )
 
@@ -200,7 +200,7 @@ target_link_libraries(findNRT
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_balls_detector.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_form_ctrl.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

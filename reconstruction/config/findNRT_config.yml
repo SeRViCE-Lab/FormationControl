@@ -1,0 +1,39 @@
+cam_num: 1 # camera number 0: internal/1st camera , 1: 2nd camera ...
+
+# board_params: # small board
+#   sqr_size: 0.028
+#   size:
+#     row_corners: 5
+#     col_corners: 8
+
+board_params: # medium board
+  sqr_size: 0.0335
+  size:
+    row_corners: 6
+    col_corners: 9
+
+cam_params:
+  image_width: 640
+  image_hight: 480
+  camera_name: narrow_stereo
+  camera_matrix:
+    rows: 3
+    cols: 3
+    data: [609.883663, 0.000000, 316.239094, 0.000000, 610.134724, 233.026148, 0.000000, 0.000000, 1.000000]
+  distortion_model: plumb_bob
+  distortion_coefficients:
+    rows: 1
+    cols: 5
+    data: [0.080178, -0.147763, -0.004142, -0.001313, 0.000000]
+  rectification_matrix:
+    rows: 3
+    cols: 3
+    data: [1.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000, 1.000000]
+  projection_matrix:
+    rows: 3
+    cols: 4
+    data: [617.408508, 0.000000, 315.495035, 0.000000, 0.000000, 617.228088, 231.541452, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]
+
+
+# note: make sure that the checkerboard is placed in the correct horizontal
+# postion with respect to the camera (the two horizontal positions are different)

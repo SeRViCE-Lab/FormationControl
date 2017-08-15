@@ -1,14 +1,13 @@
 #include <thread>
-#include <vector>
-#include <mutex>
 #include <string>
+#include <vector>
 #include <iostream>
 #include <ros/ros.h>
-#include <ros/spinner.h>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/Image.h>
 #include <image_transport/image_transport.h>
+#include <std_msgs/ColorRGBA.h>
 #include "std_msgs/Float64MultiArray.h"
 
 
@@ -21,53 +20,49 @@ private:
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
   image_transport::Subscriber image_sub_;
-  ros::Publisher locs_pub_;
+  ros::Publisher tags_pub_;
 
-  const unsigned long hardware_threads;
-  Mat color;
-  std::vector<std::thread> threads;
-  std::thread imageDispThread;
-  bool running, updateImage;
-  mutable std::string windowName;
-  ros::AsyncSpinner spinner;
+  Mat frame;
+  mutable string windowName;
 
-  std::mutex mutex;
-  std::string camera;
+  thread taggersThread, publishersThread;
+
+  std_msgs::Float64MultiArray locs_tagged;
 
   // detection parameters
   int threshold_step, min_threshold, max_threshold, min_repeatability,
       min_dist_between_blobs, blob_color, min_area, max_area, numRob;
 
   bool filter_by_color, filter_by_area, filter_by_convexity,
-        filter_by_circularity, filter_by_inertia, done;
+        filter_by_circularity, filter_by_inertia, done, running;
 
   double min_circularity, max_circularity, min_inertia_ratio,
          max_inertia_ratio, min_convexity, max_convexity;
 
 public:
-  Receiver(ros::NodeHandle nh)
-  : nh_(nh), it_(nh_), hardware_threads(std::thread::hardware_concurrency()),
-   spinner(hardware_threads/2), updateImage(false)
+  Receiver(const bool& done, ros::NodeHandle nh)
+  : done(false), nh_(nh), running(true), it_(nh_)
   {
-    windowName = "cam_rgb";
+    nh_.getParam("/tagger/Rob_Params/num_rob", numRob);
+    windowName = "cam_rgb_tagged";
     image_sub_ = it_.subscribe("/cam/image/rgb", 1, &Receiver::imageCallback, this);
-    locs_pub_ = nh_.advertise<std_msgs::Float64MultiArray>("/locs/detected", 1000);
-
-    imageDispThread = std::thread(&Receiver::imageDisp, this);
-    getParams();
+    tags_pub_ = nh_.advertise<std_msgs::Float64MultiArray>("/locs/tagged", 10);
   }
 
-  ~Receiver()
-  {
-    destroyAllWindows();
-  }
-
+  // delete copy constructors
   Receiver(Receiver const&) = delete;
   Receiver& operator=(Receiver const&) = delete;
 
-  void run() {
-    begin();
-    end();
+  ~Receiver()
+  {
+    cv::destroyAllWindows();
+  }
+
+  void begin()
+  {
+    getParams();
+    taggersThread = std::thread(&Receiver::assign_tags, this);
+    publishersThread = std::thread(&Receiver::publish_data, this);
   }
 
 private:
@@ -101,83 +96,95 @@ private:
     retrieveParam("max_convexity", max_convexity);
   }
 
-  void begin()
+  void assign_tags()
   {
-    if(spinner.canStart())
+    //// Defining LED colors
+    std_msgs::ColorRGBA led_off, led_on;
+    led_off.r = 0; led_off.g = 0; led_off.b = 0; led_off.a = 0; // robot LEDs off
+    led_on.r = 1; led_on.g = 1; led_on.b = 1; led_on.a = 0; // robots LEDs ON
+
+    // Initializing advertising topics for spheros' LED color
+    std::string led_color_topic [numRob];
+    ros::Publisher color_pub_array [numRob];
+    for (size_t num_rob = 0; num_rob < numRob; ++num_rob)
     {
-      spinner.start();
+      std::string rob_id = "sph" + std::to_string(num_rob);
+      std::string rob_name;
+      nh_.getParam("/tagger/Rob_Params/"+rob_id, rob_name);
+      std::string topic_name = "/" + rob_name + "/set_color";
+      led_color_topic [num_rob] = topic_name;
+      color_pub_array [num_rob] = nh_.advertise<std_msgs::ColorRGBA>(led_color_topic[num_rob], 1);
     }
-    running = true;
-    while(!updateImage)
+
+    //// Turn off LEDs
+    for (int num_rob = 0; num_rob < numRob; ++num_rob)
     {
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      color_pub_array[num_rob].publish(led_off);
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    //spawn the threads
-    if (imageDispThread.joinable())    {
-      imageDispThread.join();
+
+    // Loop through the spheros: turn on one robot, detect it, turn it off, repeat
+    for (int num_rob = 0; num_rob < numRob; ++num_rob)
+    {
+      color_pub_array[num_rob].publish(led_on);
+
+      // Detect robot/blob in frame
+      detectBlobs(std::move(frame),std::move(frame));
+
+      // Turn that robot off
+      color_pub_array[num_rob].publish(led_off);
+      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+
+      // Turn on LEDs
+      color_pub_array[num_rob].publish(led_on);
+      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
+
+    // Publish tagged locations
+    tags_pub_.publish(locs_tagged);
+
+    ros::Rate looper(30);
+    looper.sleep();
+
+    done = true;
   }
 
-  void end()  {
-    spinner.stop();
-    running = false;
+  void publish_data()
+  {
+    for(; running && ros::ok() ;)
+    {
+      tags_pub_.publish(locs_tagged);
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
   }
 
   void imageCallback(const sensor_msgs::ImageConstPtr& msg)
   {
-    Mat color;
-    std::lock_guard<std::mutex> lock(mutex);
-    getImage(msg, color);
-    this->color = color;
-    updateImage = true;
-  }
-
-  void getImage(const sensor_msgs::ImageConstPtr msgImage, Mat &image) const
-  {
-    cv_bridge::CvImageConstPtr cv_ptr;
+    cv_bridge::CvImagePtr frame_ptr;
     try
     {
-      cv_ptr = cv_bridge::toCvShare(msgImage, sensor_msgs::image_encodings::MONO8);
+      frame_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO8);
     }
     catch (cv_bridge::Exception& e)
     {
       ROS_ERROR("cv_bridge exception: %s", e.what());
       return;
     }
-    cv_ptr->image.copyTo(image);
+
+    frame_ptr->image.copyTo(this->frame);
   }
 
   void imageDisp()
   {
-    cv::Mat color, blob_circs(640, 480, CV_8UC3);
-    cv::namedWindow(windowName, cv::WINDOW_NORMAL);
-    cv::resizeWindow(windowName, 640, 480) ;
-
-    for(; running && ros::ok() ;)
+    namedWindow(windowName, WINDOW_NORMAL);
+    resizeWindow(windowName, 640, 480);
+    if (!frame.empty())
     {
-      if(updateImage)
-      {
-        std::lock_guard<std::mutex> lock(mutex);
-        color = this->color;
-        updateImage = false;
-
-        detectBlobs(std::move(color), std::move(blob_circs));
-        cv::imshow(windowName, blob_circs);
-      }
-
-      int key = cv::waitKey(1);
-      switch(key & 0xFF)
-      {
-        case 27:
-          break;
-        case 'q':
-          running = false;
-          break;
-      }
+      imshow(windowName, frame);
+      int key = waitKey(1);
     }
-    cv::destroyAllWindows();
-    cv::waitKey(5);
   }
+
 
   static String Legende(SimpleBlobDetector::Params &pAct)
   {
@@ -248,23 +255,18 @@ private:
     pDefaultBLOB.maxInertiaRatio = max_inertia_ratio;
     pDefaultBLOB.filterByConvexity = filter_by_convexity;
     pDefaultBLOB.minConvexity = min_convexity;
-    pDefaultBLOB.maxConvexity =max_convexity;
+    pDefaultBLOB.maxConvexity = max_convexity;
     // Descriptor array for BLOB
     vector<String> typeDesc;
     // Param array for BLOB
     vector<SimpleBlobDetector::Params> pBLOB;
     vector<SimpleBlobDetector::Params>::iterator itBLOB;
-    // Color palette
-    vector< Vec3b >  palette;
-    for (int i = 0; i<65536; i++)
-    {
-        palette.push_back(Vec3b((uchar)rand(), (uchar)rand(), (uchar)rand()));
-    }
 
     // Param for the BLOB detector
     typeDesc.push_back("BLOB");
     pBLOB.push_back(pDefaultBLOB);
 
+    // Detect that robot
     itBLOB = pBLOB.begin();
     vector<double> desMethCmp;
     Ptr<Feature2D> b;
@@ -273,61 +275,72 @@ private:
     vector<String>::iterator itDesc;
     for (itDesc = typeDesc.begin(); itDesc != typeDesc.end(); ++itDesc)
     {
-        vector<KeyPoint> keyImg1;
-        if (*itDesc == "BLOB")
+      vector<KeyPoint> keyImg1;
+      if (*itDesc == "BLOB")
+      {
+        b = SimpleBlobDetector::create(*itBLOB);
+        label = Legende(*itBLOB);
+        ++itBLOB;
+      }
+      try
+      {
+        // We can detect keypoint with detect method
+        vector<KeyPoint>  keyImg;
+        vector<Rect>  zone;
+        vector<vector <Point> >  region;
+        cv::Mat desc; //, result(img.rows, img.cols, CV_8UC3);
+        if (b.dynamicCast<SimpleBlobDetector>() != NULL)
         {
-            b = SimpleBlobDetector::create(*itBLOB);
-            label = Legende(*itBLOB);
-            ++itBLOB;
-        }
-        try
-        {
-            // We can detect keypoint with detect method
-            vector<KeyPoint>  keyImg;
-            vector<Rect>  zone;
-            vector<vector <Point> >  region;
-            Mat     desc; //, result(img.rows, img.cols, CV_8UC3);
-            if (b.dynamicCast<SimpleBlobDetector>() != NULL)
-            {
-                Ptr<SimpleBlobDetector> sbd = b.dynamicCast<SimpleBlobDetector>();
-                sbd->detect(img, keyImg, Mat());
-                drawKeypoints(img, keyImg, result);
-                std_msgs::Float64MultiArray locs;
-                locs.data.clear();
+          Ptr<SimpleBlobDetector> sbd = b.dynamicCast<SimpleBlobDetector>();
+          sbd->detect(img, keyImg, Mat());
+          drawKeypoints(img, keyImg, result);
 
-                int i = 0;
-                for (vector<KeyPoint>::iterator k = keyImg.begin(); k != keyImg.end(); ++k, ++i)
-                {
-                  cout << keyImg[i].pt.x<<";"<<keyImg[i].pt.y<<endl;
-                  locs.data.push_back(keyImg[i].pt.x);
-                  locs.data.push_back(keyImg[i].pt.y);
+          int i = 0;
+          float x = 0;
+          float y = 0;
+          for (vector<KeyPoint>::iterator k = keyImg.begin(); k != keyImg.end(); ++k, ++i)
+          {
+            x += keyImg[i].pt.x;
+            y += keyImg[i].pt.y;
 
-                  circle(result, k->pt, (int)k->size, Scalar(0, 255, 255), 1);
-                }
-                locs_pub_.publish(locs);
-            }
+            circle(result, k->pt, (int)k->size, Scalar(0, 255, 255), 1);
+
+          }
+          // avrg the centers
+          x = x/(i);
+          y = y/(i);
+          // store center
+          this->locs_tagged.data.push_back(x);
+          this->locs_tagged.data.push_back(y);
         }
-        catch (Exception& e)
-        {
-            cout << "Feature : " << *itDesc << "\n";
-            cout << e.msg << endl;
-        }
+      }
+      catch (Exception& e)
+      {
+        cout << "Feature : " << *itDesc << "\n";
+        cout << e.msg << endl;
+      }
     }
   }
+
 };
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "sphero_detector_node");
-  ros::NodeHandle nh;
+    ros::init(argc, argv, "sphero_detector_node");
+    ros::NodeHandle nh;
 
-  Receiver rcvr(nh);
-  rcvr.run();
+    bool done (false);
 
-  if(!ros::ok())
+  Receiver r(done, nh);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+  if (!done && ros::ok())
   {
-    return 0;
+      r.begin();
   }
 
-  ros::shutdown();
+  ros::spin();
+
+  return EXIT_SUCCESS;
 }

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(balls_detector)
+project(reconstruction)
 
 ## Add support for C++11, supported in ROS Kinetic and newer
 add_definitions(-std=c++11)
@@ -16,8 +16,13 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 find_package(PkgConfig)
+pkg_check_modules( EIGEN3 REQUIRED eigen3 )
+include_directories( ${EIGEN3_INCLUDE_DIRS} )
+add_definitions(${EIGEN_DEFINITIONS})
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
+# find_package(Eigen3 REQUIRED)
+
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -107,10 +112,10 @@ find_package(Boost REQUIRED COMPONENTS system)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES balls_detector
+#  LIBRARIES reconstruction
  CATKIN_DEPENDS geometry_msgs roscpp rospy sensor_msgs std_msgs
  								cv_bridge image_transport
-#  DEPENDS system_lib
+  DEPENDS EIGEN3
 )
 
 ###########
@@ -126,7 +131,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/balls_detector.cpp
+#   src/${PROJECT_NAME}/findNRT.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -137,8 +142,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/balls_detector_node.cpp)
-add_executable(tagger src/tagger.cpp)
+add_executable(findNRT src/findNRT.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -151,12 +155,10 @@ add_executable(tagger src/tagger.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_node
+target_link_libraries(findNRT
   ${catkin_LIBRARIES} ${OpenCV_LIBS}
 )
-target_link_libraries(tagger
-  ${catkin_LIBRARIES} ${OpenCV_LIBS}
-)
+
 
 #############
 ## Install ##

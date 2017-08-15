@@ -1,0 +1,11 @@
+<!-- Sleiman Safaoui
+     Aug 1, 2017
+   -->
+
+<launch>
+
+  <node pkg="form_ctrl" type="form_ctrl_node" name="form_ctrl_node" output="screen">
+    <rosparam command="load" file="$(find form_ctrl)/config/form_ctrl_node.yml"/>
+  </node>
+
+</launch>

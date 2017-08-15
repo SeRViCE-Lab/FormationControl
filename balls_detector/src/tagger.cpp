@@ -1,46 +1,17 @@
 #include <thread>
-#include <vector>
-#include <mutex>
 #include <string>
 #include <iostream>
-#include <unistd.h>
 #include <ros/ros.h>
-#include <ros/spinner.h>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/Image.h>
 #include <image_transport/image_transport.h>
 #include <std_msgs/ColorRGBA.h>
-#include "std_msgs/MultiArrayLayout.h"
-#include "std_msgs/MultiArrayDimension.h"
 #include "std_msgs/Float64MultiArray.h"
 
 
 using namespace cv;
 using namespace std;
-
-// detection parameters (global)
-int threshold_step;
-int min_threshold;
-int max_threshold;
-int min_repeatability;
-int min_dist_between_blobs;
-bool filter_by_color;
-int blob_color;
-bool filter_by_area;
-int min_area;
-int max_area;
-bool filter_by_circularity;
-double min_circularity;
-double max_circularity;
-bool filter_by_inertia;
-double min_inertia_ratio;
-double max_inertia_ratio;
-bool filter_by_convexity;
-double min_convexity;
-double max_convexity;
-bool done = false;
-
 
 class Receiver
 {
@@ -50,15 +21,41 @@ private:
   image_transport::Subscriber image_sub_;
   ros::Publisher tags_pub_;
 
-  cv::Mat frame;
-  mutable std::string windowName;
+  Mat frame;
+  mutable string windowName;
+
+  thread taggersThread, publishersThread;
 
   int numRob;
   std_msgs::Float64MultiArray locs_tagged;
 
+  // detection parameters
+  int threshold_step, min_threshold, max_threshold, min_repeatability,
+      min_dist_between_blobs, blob_color, min_area, max_area;
+
+  bool filter_by_color, filter_by_area, filter_by_convexity,
+        filter_by_circularity, filter_by_inertia;
+  bool done, running;
+
+  double min_circularity, max_circularity, min_inertia_ratio,
+         max_inertia_ratio, min_convexity, max_convexity;
+
 public:
-  Receiver()
-  : it_(nh_)
+  Receiver(const int& threshold_step, const int&  min_threshold, const int&  max_threshold,
+           const int&  min_repeatability, const int&  min_dist_between_blobs,
+           const bool&  filter_by_color, const int&  blob_color, const bool& filter_by_area,
+           const int&   max_area, const int&  min_area, const bool& filter_by_circularity,
+           const double& min_circularity,  const double& max_circularity, const bool&  filter_by_inertia,
+           const bool& filter_by_convexity, const double& min_inertia_ratio,
+           const double& max_inertia_ratio, const double&  min_convexity, const double& max_convexity)
+  : it_(nh_), threshold_step(threshold_step),  min_threshold(min_threshold),  max_threshold(max_threshold),
+    min_repeatability(min_repeatability), min_dist_between_blobs(min_dist_between_blobs),
+    filter_by_color(filter_by_color),  blob_color(blob_color),  filter_by_area(filter_by_area),
+    max_area(max_area),  min_area(min_area),  filter_by_circularity(filter_by_circularity),
+     min_circularity(min_circularity),  max_circularity(max_circularity), filter_by_inertia(filter_by_inertia),
+     filter_by_convexity(filter_by_convexity), min_inertia_ratio(min_inertia_ratio), done(false),
+     max_inertia_ratio(max_inertia_ratio),  min_convexity(min_convexity),  max_convexity(max_convexity),
+     running(true)
   {
     nh_.getParam("/tagger/Rob_Params/num_rob", numRob);
     windowName = "cam_rgb_tagged";
@@ -67,34 +64,25 @@ public:
     locs_tagged.data.clear();
   }
 
+  // delete copy constructors
+  Receiver(Receiver const&) = delete;
+  Receiver& operator=(Receiver const&) = delete;
+
   ~Receiver()
   {
     cv::destroyAllWindows();
   }
 
-  void tag()
+  void begin()
   {
-    assign_tags();
+    taggersThread = std::thread(&Receiver::assign_tags, this);
+    publishersThread = std::thread(&Receiver::publish_data, this);
   }
-
-  void publish_data()
-  {
-    for(int i = 0; i<=1000 ; i++)
-    {
-      tags_pub_.publish(locs_tagged);
-      ros::Duration(0.01).sleep();
-    }
-  }
-
 
 private:
 
   void assign_tags()
   {
-    // grab a frame and display it
-    ros::spinOnce();
-    imageDisp();
-
     //// Defining LED colors
     std_msgs::ColorRGBA led_off, led_on;
     led_off.r = 0; led_off.g = 0; led_off.b = 0; led_off.a = 0; // robot LEDs off
@@ -116,51 +104,44 @@ private:
     //// Turn off LEDs
     for (int num_rob = 0; num_rob < numRob; ++num_rob)
     {
-      ros::Duration(2).sleep();
       color_pub_array[num_rob].publish(led_off);
-      ros::Duration(2).sleep();
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-
-    // grab a frame and display it
-    ros::spinOnce();
-    imageDisp();
 
     // Loop through the spheros: turn on one robot, detect it, turn it off, repeat
     for (int num_rob = 0; num_rob < numRob; ++num_rob)
     {
-      // Turn on one robot
-      ros::Duration(2).sleep();
       color_pub_array[num_rob].publish(led_on);
-      ros::Duration(2).sleep();
-
-      // grab a frame and display it
-      ros::spinOnce();
-      imageDisp();
 
       // Detect robot/blob in frame
       detectBlobs(std::move(frame),std::move(frame));
-      imageDisp();
 
       // Turn that robot off
-      ros::Duration(2).sleep();
       color_pub_array[num_rob].publish(led_off);
-      ros::Duration(2).sleep();
-    }
+      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
-    //// Turn on LEDs
-    for (int num_rob = 0; num_rob < numRob; ++num_rob)
-    {
-      ros::Duration(2).sleep();
+      // Turn on LEDs
       color_pub_array[num_rob].publish(led_on);
-      ros::Duration(2).sleep();
+      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
 
     // Publish tagged locations
     tags_pub_.publish(locs_tagged);
-    done = true;
 
+    ros::Rate looper(30);
+    looper.sleep();
+
+    done = true;
   }
 
+  void publish_data()
+  {
+    for(; running && ros::ok() ;)
+    {
+      tags_pub_.publish(locs_tagged);
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+  }
 
   void imageCallback(const sensor_msgs::ImageConstPtr& msg)
   {
@@ -175,18 +156,17 @@ private:
       return;
     }
 
-    cv::Mat frame;
     frame_ptr->image.copyTo(this->frame);
   }
 
   void imageDisp()
   {
-    cv::namedWindow(windowName, cv::WINDOW_NORMAL);
-    cv::resizeWindow(windowName, 640, 480);
+    namedWindow(windowName, WINDOW_NORMAL);
+    resizeWindow(windowName, 640, 480);
     if (!frame.empty())
     {
-      cv::imshow(windowName, frame); 
-      int key = cv::waitKey(1);
+      imshow(windowName, frame);
+      int key = waitKey(1);
     }
   }
 
@@ -329,47 +309,62 @@ private:
 
 };
 
+template <typename T>
+void retrieveParam(std::string param, T value)
+{
+  ros::param::get("/tagger/Blob_Params/" + param, value);
+}
+
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "sphero_detector_node");
     ros::NodeHandle nh;
 
-    nh.getParam("/tagger/Blob_Params/threshold_step", threshold_step);
-    nh.getParam("/tagger/Blob_Params/min_threshold", min_threshold);
-    nh.getParam("/tagger/Blob_Params/max_threshold", max_threshold);
-    nh.getParam("/tagger/Blob_Params/min_repeatability", min_repeatability);
-    nh.getParam("/tagger/Blob_Params/min_dist_between_blobs", min_dist_between_blobs);
-    nh.getParam("/tagger/Blob_Params/filter_by_color", filter_by_color);
-    nh.getParam("/tagger/Blob_Params/blob_color", blob_color);
-    nh.getParam("/tagger/Blob_Params/filter_by_area", filter_by_area);
-    nh.getParam("/tagger/Blob_Params/max_area", max_area);
-    nh.getParam("/tagger/Blob_Params/min_area", min_area);
-    nh.getParam("/tagger/Blob_Params/filter_by_circularity", filter_by_circularity);
-    nh.getParam("/tagger/Blob_Params/min_circularity", min_circularity);
-    nh.getParam("/tagger/Blob_Params/max_circularity", max_circularity);
-    nh.getParam("/tagger/Blob_Params/filter_by_inertia", filter_by_inertia);
-    nh.getParam("/tagger/Blob_Params/min_inertia_ratio", min_inertia_ratio);
-    nh.getParam("/tagger/Blob_Params/max_inertia_ratio", max_inertia_ratio);
-    nh.getParam("/tagger/Blob_Params/filter_by_convexity", filter_by_convexity);
-    nh.getParam("/tagger/Blob_Params/min_convexity", min_convexity);
-    nh.getParam("/tagger/Blob_Params/max_convexity", max_convexity);
+    // detection parameters
+    int threshold_step, min_threshold, max_threshold, min_repeatability,
+        min_dist_between_blobs, blob_color, min_area, max_area;
 
-  Receiver r;
-  ros::Duration(1.0).sleep();
+    bool filter_by_color, filter_by_area, filter_by_convexity,
+          filter_by_circularity, filter_by_inertia;
+    bool done (false);
 
-  r.tag();
-  r.publish_data();
+    double min_circularity, max_circularity, min_inertia_ratio,
+           max_inertia_ratio, min_convexity, max_convexity;
 
-  if (done)
+    retrieveParam("threshold_step", threshold_step);
+    retrieveParam("min_threshold", min_threshold);
+    retrieveParam("max_threshold", max_threshold);
+    retrieveParam("min_repeatability", min_repeatability);
+    retrieveParam("min_dist_between_blobs", min_dist_between_blobs);
+    retrieveParam("filter_by_color", filter_by_color);
+    retrieveParam("blob_color", blob_color);
+    retrieveParam("filter_by_area", filter_by_area);
+    retrieveParam("max_area", max_area);
+    retrieveParam("min_area", min_area);
+    retrieveParam("filter_by_circularity", filter_by_circularity);
+    retrieveParam("min_circularity", min_circularity);
+    retrieveParam("max_circularity", max_circularity);
+    retrieveParam("filter_by_inertia", filter_by_inertia);
+    retrieveParam("min_inertia_ratio", min_inertia_ratio);
+    retrieveParam("max_inertia_ratio", max_inertia_ratio);
+    retrieveParam("filter_by_convexity", filter_by_convexity);
+    retrieveParam("min_convexity", min_convexity);
+    retrieveParam("max_convexity", max_convexity);
+
+  Receiver r(threshold_step,  min_threshold,  max_threshold,  min_repeatability,
+            min_dist_between_blobs,  filter_by_color,  blob_color,  filter_by_area,
+            max_area,  min_area,  filter_by_circularity,  min_circularity,  max_circularity,
+            filter_by_inertia, filter_by_convexity, min_inertia_ratio,  max_inertia_ratio,
+            min_convexity,  max_convexity);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+  if (!done && ros::ok())
   {
-    ros::shutdown();
-    return 0;
+      r.begin();
   }
 
-  if(!ros::ok())
-  {
-    return 0;
-  }
+  ros::spin();
 
-  ros::shutdown();
+  return EXIT_SUCCESS;
 }

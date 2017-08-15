@@ -1,45 +1,41 @@
-## Official Documentation
+### Official Documentation
 
-  - Checkout the [docs](http://mmwise.github.com/sphero_ros)
+  * [Docs](http://mmwise.github.com/sphero_ros)
 
 ### Dependencies
 
-* ROS
- * Go to [the ROS website](http://wiki.ros.org/indigo/Installation/Ubuntu) and follow all the instructions there to install
-  your ros environment.
- * Then install catkin.
-  * Catkin build:  The best way to install catkin build is via PyPI. Do this in terminal:  
-    ```
-      sudo pip install -U catkin_tools
-    ```
- * Build your workspace
+* [ROS](http://wiki.ros.org/indigo/Installation/Ubuntu)
+  * follow all the instructions here to install
+
+* Catkin.
+  * catkin build via PyPI: `sudo pip install -U catkin_tools`
+
+* Build your workspace
 
   ```bash
-  export ROS_DISTRO=`rosversion -d`              # Set ROS distribution
-  mkdir -p ~/catkin_ws/src                       # Create workspace
-  cd ~/catkin_ws/src                             # Navigate to source space
-  cd ~/catkin_ws                                 # Navigate to ros workspace root
-  catkin init                                              # Initialize workspace
+  export ROS_DISTRO=`rosversion -d`            # Set ROS distribution
+  mkdir -p ~/sandbox/src                       # Create workspace
+  cd ~/sandbox/src                             # Navigate to source space
+  cd ~/sandbox                                 # Navigate to ros workspace root
+  catkin init                                  # Initialize workspace
   ```
-* Install opencv 2.4
 
-### Sphero ROS Build
+* Install opencv 2.4: `opencv.org`
 
-`cd` to the `src` folder of your `catkin_ws` and then clone the `master` branch of this repo:
-
-```
-  cd ~/catkin_ws/src
-  git clone https://github.com/service-lab/sphero-ros.git -b master
-```
-
-Now cd to the root of your catkin_ws folder and then build:
+* Sphero ROS Build: cd to the `src` folder of your `sandbox` folder and then clone the `master` branch of this repo:
 
 ```bash
-  cd ~/catkin_ws
-  catkin build
+  cd ~/sandbox/src
+  git clone https://github.com/service-lab/formationcontrols.git -b master
 ```
 
-### Adding Paired Bluetooth Addresses to Launch file
+Now cd to the root of your sandbox folder and build:
+
+```bash
+  cd ~/sandbox; catkin build
+```
+
+### Add Paired Bluetooth Addresses to Launch file
 
  Pair the bluetooth for allyour sphero devices using the bluetooth settings tab on your Linux distro, e.g. >> `Dash + <search for BlueTooth + Click on the "+" sign to add other bluetooth devices>`.
 

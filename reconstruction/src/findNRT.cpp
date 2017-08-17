@@ -10,7 +10,6 @@
 #include <sensor_msgs/Image.h>
 #include "std_msgs/Float64MultiArray.h"
 #include <image_transport/image_transport.h>
-// #include "/usr/include/eigen3/Eigen/Dense"
 #include <Eigen/Dense>
 
 using namespace cv;
@@ -23,28 +22,22 @@ private:
   // node handle, image, and video variables
   ros::NodeHandle nh_;
   int cam_num, img_width_, img_hight_;
-  std::string window_name_;
+  string window_name_;
   VideoCapture cap_;
-  Mat frame_;
+  Mat frame_, cam_mat_, dist_coef_, rvec_, tvec_;
 
   // variables for board parameters
   double sqr_size_;
-  int row_corners_, col_corners_;
-
-  // variables for camera parameters
-  int cam_mat_row_, cam_mat_col_;
-  int dist_coef_row_, dist_coef_col_;
+  int row_corners_, col_corners_, cam_mat_row_,
+      cam_mat_col_, dist_coef_row_, dist_coef_col_;
 
   // variables for solvePnP
-  std::vector<cv::Point3f> object_points_;
-  std::vector<cv::Point2f> image_points_;
-  cv::Mat cam_mat_;
-  cv::Mat dist_coef_;
-  cv::Mat rvec_, tvec_;
+  vector<Point3f> object_points_;
+  vector<Point2f> image_points_;
 
   // variables for resutls
-  cv::Mat R_cvmat_;
-  bool Refreshed_, patternfound_;
+  Mat R_cvmat_;
+  bool Refreshed_, patternfound_, updateParams_;
 
   ros::AsyncSpinner spinner;
 
@@ -55,12 +48,11 @@ private:
   // variables for subscribing to image points and publishing world points
   std_msgs::Float64MultiArray locs_ordered_, pos_world_;
 
-  std::thread findNRTThread, publishThread_;
-
+  thread findNRTThread, publishThread_;
 public:
   FindNRT()
   : window_name_("checkerboard_img"), patternfound_(false),
-  spinner(2)
+  updateParams_(true),  spinner(2)
   {
     // initializing subscriber and publisher
     pos_pub_ = nh_.advertise<std_msgs::Float64MultiArray>("/pos/world", 10);
@@ -68,27 +60,37 @@ public:
 
   ~FindNRT()
   {
-    cv::destroyAllWindows();
+    destroyAllWindows();
   }
 
   void run()
   {
-    if(spinner.canStart())
-    {
-      spinner.start();
-      begin();
-      end();
-    }
+    begin();
+    end();
   }
 
 private:
   void begin()
   {
+    if(spinner.canStart())
+    {
+      spinner.start();
+    }
+
+
     populateParams();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+    ROS_INFO("row_corners_ %d, col_corners_ %d, cam_mat_row_ %d, cam_mat_col_ %d",
+        row_corners_, col_corners_, cam_mat_row_, cam_mat_col_);
+
     initCVParams();
     locs_sub_ = nh_.subscribe("/locs/ordered", 1, &FindNRT::callback, this);
-    findNRTThread = std::thread(&FindNRT::find_nrt, this);
-    publishThread_ = std::thread(&FindNRT::pub_recon_data, this);
+
+    ROS_INFO(" :calling findnrt thread");
+    findNRTThread = thread(&FindNRT::find_nrt, this);
+    publishThread_ = thread(&FindNRT::pub_recon_data, this);
   }
 
   void end(){
@@ -98,66 +100,71 @@ private:
   void initCVParams()
   {
     // initializing video object
-    cap_ = VideoCapture(cam_num);
-    cv::namedWindow(window_name_, cv::WINDOW_NORMAL);
-    cv::resizeWindow(window_name_, img_width_, img_hight_);
-//initializing object points
-    object_points_ = std::vector<cv::Point3f> (row_corners_*col_corners_,cv::Point3f());
+    this->cap_ = VideoCapture(cam_num);
+    namedWindow(window_name_, WINDOW_NORMAL);
+    resizeWindow(window_name_, img_width_, img_hight_);
+    //initializing object points
+    object_points_ = vector<Point3f> (row_corners_*col_corners_,Point3f());
     // initializing camera matrix
-    cam_mat_ = cv::Mat(cam_mat_row_,cam_mat_col_,cv::DataType<double>::type);
+    cam_mat_ = Mat(cam_mat_row_,cam_mat_col_,DataType<double>::type);
     // initializing distortion coefficients
-    dist_coef_ = cv::Mat(dist_coef_row_,dist_coef_col_,cv::DataType<double>::type);
+    dist_coef_ = Mat(dist_coef_row_,dist_coef_col_,DataType<double>::type);
     // initializing rotation and translation vectors
-    rvec_ = cv::Mat(1,3,cv::DataType<double>::type);//CV_32F
-    tvec_ = cv::Mat(1,3,cv::DataType<double>::type);
+    rvec_ = Mat(1,3,DataType<double>::type);//CV_32F
+    tvec_ = Mat(1,3,DataType<double>::type);
     // initializing Rotation matrix
-    R_cvmat_ = cv::Mat(3,3,cv::DataType<double>::type);
+    R_cvmat_ = Mat(3,3,DataType<double>::type);
+
+    std::cout<< " cam_mat_: " << cam_mat_ << std::endl;
   }
 
   template<typename T>
-  void get_params(std::string param, T value) const
+  void get_params(string&& param, T&& value)
   {
-    ros::param::get(param, value);
+    nh_.getParam(param, value);
   }
 
-  void populateParams() const{
-    get_params("/findNRT/cam_num", cam_num);
-    get_params("/findNRT/cam_params/image_width", img_width_);
-    get_params("/findNRT/cam_params/image_hight", img_hight_);
+  void populateParams() {
+    get_params("/findNRT/cam_num", move(cam_num));
+    get_params("/findNRT/cam_params/image_width", move(img_width_));
+    get_params("/findNRT/cam_params/image_hight", move(img_hight_));
 
-    get_params("/findNRT/board_params/size/row_corners",row_corners_);
-    get_params("/findNRT/board_params/size/col_corners",col_corners_);
-    get_params("/findNRT/board_params/sqr_size",sqr_size_);
+    get_params("/findNRT/board_params/size/row_corners", move(row_corners_));
+    get_params("/findNRT/board_params/size/col_corners", move(col_corners_));
+    get_params("/findNRT/board_params/sqr_size",move(sqr_size_));
 
-    get_params("/findNRT/cam_params/camera_matrix/rows", cam_mat_row_);
-    get_params("/findNRT/cam_params/camera_matrix/cols", cam_mat_col_);
+    get_params("/findNRT/cam_params/camera_matrix/rows", move(cam_mat_row_));
+    get_params("/findNRT/cam_params/camera_matrix/cols", move(cam_mat_col_));
 
-    get_params("/findNRT/cam_params/distortion_coefficients/rows", dist_coef_row_);
-    get_params("/findNRT/cam_params/distortion_coefficients/cols", dist_coef_col_);
+    get_params("/findNRT/cam_params/distortion_coefficients/rows", move(dist_coef_row_));
+    get_params("/findNRT/cam_params/distortion_coefficients/cols", move(dist_coef_col_));
+    // updateParams_ = false;
   }
 
   void find_nrt() // finds rotation matrix and translation vector using checkerboard
   {
+    ROS_INFO(" :within findnrt thread");
     get_img();
+    ROS_INFO(":got after get image");
     get_cam_param();
 
-    cv::Size patternsize (row_corners_, col_corners_);
-    patternfound_ = cv::findChessboardCorners(frame_,
+    Size patternsize (row_corners_, col_corners_);
+    patternfound_ = findChessboardCorners(frame_,
                                              patternsize,
                                              image_points_,
-                                             cv::CALIB_CB_NORMALIZE_IMAGE + cv::CALIB_CB_FAST_CHECK );
+                                             CALIB_CB_NORMALIZE_IMAGE + CALIB_CB_FAST_CHECK );
     while (!patternfound_) // if pattern not detected, repeat process with new image
     {
-      std::cout<<"No pattern found. Modify board postition, or camera postion/parameters"<<endl;
+      cout<<"No pattern found. Modify board postition, or camera postion/parameters"<<endl;
       get_img();
       show_imag();
-      patternfound_ = cv::findChessboardCorners(frame_,
+      patternfound_ = findChessboardCorners(frame_,
                                                patternsize,
                                                image_points_,
-                                               cv::CALIB_CB_NORMALIZE_IMAGE + cv::CALIB_CB_FAST_CHECK );
+                                               CALIB_CB_NORMALIZE_IMAGE + CALIB_CB_FAST_CHECK );
     }
     // checkerboard pattern should be defined now
-    cv::drawChessboardCorners(frame_, patternsize, image_points_, patternfound_);
+    drawChessboardCorners(frame_, patternsize, image_points_, patternfound_);
     show_imag();
     // at this point we have data in image_points
 
@@ -169,17 +176,17 @@ private:
     {
       for (int j = 0; j < row_corners_; ++j)
       {
-        object_points_.at( row_corners_*i+j ) = cv::Point3f((i+1)*sqr_size_, row_corners_*sqr_size_ - (j+1)*sqr_size_, 0);
+        object_points_.at( row_corners_*i+j ) = Point3f((i+1)*sqr_size_, row_corners_*sqr_size_ - (j+1)*sqr_size_, 0);
       }
     }
 
     bool solved;
     bool use_extrinsic_guess;
-    solved = cv::solvePnP (object_points_, image_points_,
+    solved = solvePnP (object_points_, image_points_,
                            cam_mat_, dist_coef_,
                            rvec_, tvec_);
 
-    cv::Rodrigues(rvec_, R_cvmat_);
+    Rodrigues(rvec_, R_cvmat_);
 
     stop_cap();
   }
@@ -280,14 +287,19 @@ private:
 
   void get_img() // gets one image from camera
   {
+    ROS_INFO("within get_img");
     if (!this->cap_.isOpened())
     {
-      return;
+      ROS_FATAL("Can not open the camera. Ensure the driver is working ");
     }
-    cv::Mat raw_img;
+    Mat raw_img;
+
+    std::cout<< "populating raw img, cam_num_ is " << cam_num << "\n";
+
     this->cap_ >> raw_img;
+    ROS_INFO("populated raw img");
     cv::cvtColor(raw_img, this->frame_, CV_BGR2GRAY);
-    return;
+    ROS_INFO("populated raw img");
   }
 
   void show_imag() // display image
@@ -297,21 +309,21 @@ private:
       return;
     }
     cv::imshow(window_name_, this->frame_);
-    int key = cv::waitKey(1);
+    int key = waitKey(1);
     return;
   }
 
   void stop_cap() //destroys video object and closes windows if destroyAllWindows is uncommented
   {
-    cv::destroyAllWindows();
+    destroyAllWindows();
     this->cap_.release();
     return;
   }
 
   void get_cam_param() // gets camera parameters from yaml file
   {
-    std::vector<double> a;
-    std::vector<double> d;
+    vector<double> a;
+    vector<double> d;
     get_params("/findNRT/cam_params/camera_matrix/data", a);
     get_params("/findNRT/cam_params/distortion_coefficients/data", d);
     for (int i = 0; i < this->cam_mat_row_; ++i)
@@ -334,17 +346,13 @@ private:
   void callback(const std_msgs::Float64MultiArray& locs) // callback to get ordered locations
   {
     this->locs_ordered_ = locs;
-    pub_recon_data();
-    return;
+    std::cout << "locs: " << "here in callback" << std::endl;
   }
-
 };
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "findNRT");
-  ros::NodeHandle nh;
-
 
   FindNRT fnrt;
   fnrt.run();

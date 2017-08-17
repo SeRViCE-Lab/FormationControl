@@ -1,8 +1,8 @@
 #contains the namespace of the robots we want to control
-ypp: true
+ypp: false
     # name: sphero_ypp
     # address: 68:86:E7:09:0B:77
-rwp: true
+rwp: false
 rgo: false
 pob: false
 www: false
@@ -10,3 +10,4 @@ rpg: false
 wwb: false
 gbr: false
 www: false
+yry: true

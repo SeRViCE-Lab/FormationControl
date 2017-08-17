@@ -19,7 +19,7 @@ find_package(PkgConfig)
 pkg_check_modules( EIGEN3 REQUIRED eigen3 )
 include_directories( ${EIGEN3_INCLUDE_DIRS} )
 add_definitions(${EIGEN_DEFINITIONS})
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 2 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 # find_package(Eigen3 REQUIRED)
 

@@ -1,19 +1,19 @@
 <launch>
 
   <!-- <rosparam command="load" file="$(find sphero_node)/config/sphero.yaml" /> -->
-  <arg name="pob" default="true"/>
-  <arg name="yry" default="true"/>
-  <arg name="rpg" default="true"/>
+  <arg name="pob" default="false"/>
+  <arg name="yry" default="false"/>
+  <arg name="rpg" default="false"/>
 
   <arg name="gbr" default="false"/>
   <arg name="rwp" default="false"/>
   <arg name="gpb" default="false"/>
-  <arg name="grw" default="false"/>
-  <arg name="wwb" default="false"/>
+  <arg name="grw" default="true"/>
+  <arg name="wwb" default="true"/>
   <arg name="ypp" default="false"/>
   <arg name="rgo" default="false"/>
   <arg name="www" default="false"/>
-  <arg name="yyw" default="false"/>
+  <arg name="yyw" default="true"/>
 
   <group if="$(arg yry)">
     <node pkg="sphero_node" type="sphero.py" name="sphero_yry" ns="sphero_yry" respawn="true">

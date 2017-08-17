@@ -1,14 +1,10 @@
-### Official Documentation
-
-  * [Docs](http://mmwise.github.com/sphero_ros)
-
 ### Dependencies
 
-* [ROS](http://wiki.ros.org/indigo/Installation/Ubuntu)
-  * follow all the instructions here to install
+* [ROS 1.5](http://wiki.ros.org/indigo/Installation/Ubuntu)
+  * Follow the instructions here to install
 
 * Catkin.
-  * catkin build via PyPI: `sudo pip install -U catkin_tools`
+  * Install catkin build via PyPI: `sudo pip install -U catkin_tools`
 
 * Build your workspace
 
@@ -20,16 +16,21 @@
   catkin init                                  # Initialize workspace
   ```
 
-* Install opencv 2.4: `opencv.org`
+* Install opencv 2.4:
 
-* Sphero ROS Build: cd to the `src` folder of your `sandbox` folder and then clone the `master` branch of this repo:
+```bash
+  sudo apt-get install libopencv-dev
+```
+
+* Formation Control Build:
+  Clone the `master` branch of this repo into your preferrable catkin workspace
 
 ```bash
   cd ~/sandbox/src
-  git clone https://github.com/service-lab/formationcontrols.git -b master
+  git clone https://github.com/service-lab/formationcontrol.git -b master
 ```
 
-Now cd to the root of your sandbox folder and build:
+Now cd to the root of your catkin workspace folder and build, e.g.
 
 ```bash
   cd ~/sandbox; catkin build

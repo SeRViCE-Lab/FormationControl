@@ -48,7 +48,7 @@ private:
   double vd_gain_, v_gain_, vmax_, km_, ka_, kh_, kp_, ki_, a_bound_, b_bound_,
         gain_, speed_gain_,  delay_;
   bool update, first_time, use_adaptive_vel_ctrl, use_PID_ctrl;
-  Matrix<double, 6, 6> lnr_mat; // 3 rob
+  MatrixXd lnr_mat; // 3 rob
 
   string window_name, window_name2, rob_name, rob_id;
 
@@ -467,6 +467,7 @@ private:
         nh_.getParam("/form_ctrl_node/CVX_Optimization/LnR_3", lnr_3);
         double max_lnr = 0;
 
+        lnr_mat.resize(num_rows, num_rows);
         for (int i = 0; i < num_rows; ++i)        {
           for (int j = 0; j < num_rows; ++j)
           {

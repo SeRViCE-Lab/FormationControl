@@ -21,8 +21,8 @@ import argparse
 
 #ros imports
 import rospy
-import roslib
-roslib.load_manifest('balls_detector')
+# import roslib
+# roslib.load_manifest('balls_detector')
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError

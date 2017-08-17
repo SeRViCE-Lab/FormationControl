@@ -1,9 +1,9 @@
 Rob_Params:
-  num_rob: 3
-  sph0: sphero_pob
-  sph1: sphero_yry
+  num_rob: 4
+  sph0: sphero_gbr
+  sph1: sphero_grw
   sph2: sphero_rpg
-  # sph3: sphero_rwp
+  sph3: sphero_rwp
 Blob_Params:
   threshold_step: 10
   min_threshold: 45

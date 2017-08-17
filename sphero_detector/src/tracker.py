@@ -19,8 +19,8 @@ import sys
 
 #ros imports
 import rospy
-import roslib
-roslib.load_manifest('balls_detector')
+# import roslib
+# roslib.load_manifest('balls_detector')
 from std_msgs.msg import Float64MultiArray
 
 
@@ -29,12 +29,13 @@ class TagsGrabber(object):
     We get the correctly ordered centroids published after tagger.cpp runs, and
     set that order to be the default order (based on which we will track)
     '''
-    self.tags_new = []
+    # tags_new = []
     def __init__(self):
+        self.tags_new = Float64MultiArray()
         self.tag_sub = rospy.Subscriber("/locs/tagged", Float64MultiArray,
-                                        self.callbackT, queue_size=1)
+                                        self.callback, queue_size=1)
 
-    def callbackT(self, data):
+    def callback(self, data):
         self.tags_new = data;
 
     def get_tags_new(self):
@@ -44,12 +45,13 @@ class PosGrabber(object):
     '''
     We get the newly published centroids.
     '''
-    self.pos_new = []
+    # pos_new = []
     def __init__(self):
+        self.pos_new = Float64MultiArray()
         self.pos_sub = rospy.Subscriber("/locs/detected", Float64MultiArray,
-                                        self.callbackP, queue_size=1)
+                                        self.callback, queue_size=1)
 
-    def callbackP(self, data):
+    def callback(self, data):
         self.pos_new = data
 
     def get_pos_new(self):
